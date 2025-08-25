@@ -9,10 +9,9 @@ export default function Page() {
   const [loggedUser, setLoggedUser] = useState<string | null>(null);
 
   useEffect(() => {
-    ProductService.getProducts()
-      .then((response) => {
-        setProducts(response);
-      })
+    ProductService.getProducts().then((response) => {
+      setProducts(response);
+    });
   }, []);
 
   useEffect(() => {
@@ -28,7 +27,7 @@ export default function Page() {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-green-200 to-green-600 text-white text-center py-20 px-4">
+      <section className="bg-gradient-to-r from-green-300 to-green-500 text-gray-800 text-center py-20 px-4">
         <h2 className="text-4xl font-bold mb-4">Descubrí lo mejor en deportes y estilo</h2>
         <p className="text-lg">Ofertas exclusivas y productos seleccionados para vos</p>
       </section>
@@ -38,16 +37,19 @@ export default function Page() {
         <h3 className="text-2xl font-semibold mb-8 text-gray-800">Productos destacados</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {products.sort(() => Math.random() - 0.5).slice(0, 3).map((product) => (
-            <div key={product.id} className="bg-white shadow rounded-lg p-4 hover:shadow-xl transition-shadow">
+            <div
+              key={product.id}
+              className="bg-white shadow-md rounded-xl p-4 hover:shadow-xl transition-shadow"
+            >
               <img
                 src={`${process.env.NEXT_PUBLIC_BACKEND_URL}api/products/uploads/products/${product.id}`}
-                alt={`${product.name}`}
-                className="w-full h-48 object-cover rounded-md mb-4"
+                alt={product.name}
+                className="w-full h-48 object-cover rounded-lg mb-4"
               />
-              <h4 className="text-lg font-medium text-gray-700 mb-2">{product.name}</h4>
-              <p className="text-sm text-gray-500 mb-4">{product.description}.</p>
-              <p className="text-sm text-gray-500 mb-4">${product.price}.</p>
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+              <h4 className="text-lg font-medium text-gray-800 mb-2">{product.name}</h4>
+              <p className="text-sm text-gray-600 mb-4">{product.description}</p>
+              <p className="text-lg font-semibold text-green-700 mb-4">${product.price}</p>
+              <button className="w-full bg-gradient-to-r from-green-400 to-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-green-500 hover:to-green-700 transition">
                 Ver más
               </button>
             </div>

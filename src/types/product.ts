@@ -8,7 +8,7 @@ export type Product = {
 
 export type ProductResponseDTO = {
     id: number;
-    product_name: string;
+    name: string;
     category: string;
     description: string;
     price: number;

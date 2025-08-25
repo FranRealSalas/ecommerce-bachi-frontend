@@ -5,14 +5,13 @@ import Modal from "@/modals/Modal";
 import CartService from "@/services/CartService";
 import ProductService from "@/services/ProductService";
 import { ProductResponseDTO } from "@/types/product";
-import { UserResponseDTO } from "@/types/user";
 import { useEffect, useState } from "react";
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<ProductResponseDTO[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [formData, setFormData] = useState({
-        product_name: "",
+        name: "",
         description: "",
         price: 0,
         category: "camisetas",
@@ -22,7 +21,7 @@ export default function ProductsPage() {
     const [editOpen, setEditOpen] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [editFormData, setEditFormData] = useState({
-        product_name: selectedProduct?.product_name || "",
+        name: selectedProduct?.name || "",
         description: selectedProduct?.description || "",
         price: selectedProduct?.price || 0,
         category: selectedProduct?.category || "",
@@ -56,21 +55,19 @@ export default function ProductsPage() {
         fetchProducts();
     }, []);
 
-    const handleAddToCart = async () => {
-        if (!loggedUser || !selectedProduct) return;
+    const handleAddToCart = async (product: ProductResponseDTO) => {
+        if (!loggedUser) return;
 
         try {
-            console.log(selectedProduct.price)
             await CartService.addItemToCart(loggedUser, {
-                productCartId: selectedProduct.id,
-                productPrice: selectedProduct.price,
+                productCartId: product.id,
+                productPrice: product.price,
                 quantity: 1,
             });
-            alert("Producto agregado al carrito");
-            closeProductModal();
+            console.log("Producto agregado al carrito");
         } catch (error) {
             console.error("Error al agregar al carrito:", error);
-            alert("No se pudo agregar al carrito");
+            console.log("No se pudo agregar al carrito");
         }
     };
 
@@ -79,19 +76,36 @@ export default function ProductsPage() {
         setSelectedCategory(category);
 
         try {
+            let filteredProducts: ProductResponseDTO[] = [];
+
             if (category === "") {
-                // Si se elige "Todas", traer todos los productos
+                // Traer todos los productos
                 const allProducts = await ProductService.getProducts();
-                setProducts(allProducts);
+                filteredProducts = allProducts ?? [];
             } else {
-                // Si se elige una categoría específica
-                const filteredProducts = await ProductService.getProductsByCategory(category);
-                setProducts(filteredProducts);
+                try {
+                    // Traer productos filtrados por categoría
+                    const productsByCategory = await ProductService.getProductsByCategory(category);
+                    filteredProducts = productsByCategory ?? [];
+                } catch (err: any) {
+                    if (err.response?.status === 404) {
+                        // No hay productos en esa categoría
+                        filteredProducts = [];
+                    } else {
+                        throw err; // si es otro error, lo relanza
+                    }
+                }
             }
+
+            setProducts(filteredProducts);
+
         } catch (error) {
             console.error("Error al filtrar productos:", error);
+            setProducts([]); // fallback si falla la petición
         }
     };
+
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -104,8 +118,8 @@ export default function ProductsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { product_name, description, price, category } = formData;
-            const response = await ProductService.createProduct(product_name, description, price, category);
+            const { name, description, price, category } = formData;
+            const response = await ProductService.createProduct(name, description, price, category);
             console.log("Producto creado:", response);
             // Opcional: resetear campos o cerrar modal
         } catch (error) {
@@ -145,7 +159,7 @@ export default function ProductsPage() {
         try {
             const updatedProduct = await ProductService.updateProduct(
                 selectedProduct.id,
-                editFormData.product_name,
+                editFormData.name,
                 editFormData.description,
                 editFormData.price,
                 editFormData.category
@@ -209,63 +223,91 @@ export default function ProductsPage() {
 
                 {/* Modal para crear producto */}
                 {modalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                        <div className="bg-white p-6 rounded-2xl shadow-xl max-w-md w-full mx-auto border border-gray-200 relative">
-                            {/* Botón cerrar */}
-                            <button
-                                onClick={() => setModalOpen(false)}
-                                className="absolute top-3 right-4 text-gray-500 hover:text-gray-700"
-                            >
-                                ✕
-                            </button>
-
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                        onClick={() => setModalOpen(false)} // cerrar al clickear fondo
+                    >
+                        <div
+                            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-auto border border-gray-200 relative animate-fadeIn"
+                            onClick={(e) => e.stopPropagation()} // evita cerrar si clickeas dentro
+                        >
                             <form
                                 onSubmit={handleSubmit}
-                                className="flex flex-col space-y-4 bg-gradient-to-r from-green-200 to-green-300 p-6 rounded-xl shadow-md"
+                                className="flex flex-col space-y-5 bg-gradient-to-r from-green-100 to-green-200 p-8 rounded-2xl"
                             >
+                                <h2 className="text-2xl font-bold text-gray-800 text-center">
+                                    Crear Producto
+                                </h2>
+
+                                {/* Nombre */}
                                 <input
-                                    className="bg-white border border-gray-300 rounded px-4 py-2"
-                                    name="product_name"
+                                    className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                                    name="name"
                                     placeholder="Nombre"
-                                    value={formData.product_name}
+                                    value={formData.name}
                                     onChange={handleChange}
                                 />
-                                <input
-                                    className="bg-white border border-gray-300 rounded px-4 py-2"
+
+                                {/* Descripción */}
+                                <textarea
+                                    className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"
                                     name="description"
                                     placeholder="Descripción"
                                     value={formData.description}
-                                    onChange={handleChange}
+                                    onChange={() => handleChange}
+                                    rows={3}
                                 />
+
+                                {/* Precio */}
                                 <input
-                                    className="bg-white border border-gray-300 rounded px-4 py-2"
+                                    className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
                                     name="price"
                                     type="number"
                                     placeholder="Precio"
                                     value={formData.price}
                                     onChange={handleChange}
                                 />
+
+                                {/* Categoría */}
                                 <select
-                                    className="bg-white border border-green-700 rounded px-4 py-2 text-gray-800 appearance-none focus:outline-none focus:ring-2 focus:ring-green-600"
+                                    className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                     name="category"
                                     value={formData.category}
                                     onChange={handleChange}
                                 >
+                                    <option value="">Selecciona una categoría</option>
                                     <option value="camisetas">Camisetas</option>
                                     <option value="pantalones">Pantalones</option>
                                     <option value="calzado">Calzado</option>
                                     <option value="mas">Más</option>
                                 </select>
+
+                                {/* Imagen */}
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">
+                                        Imagen del producto
+                                    </label>
+                                    <input
+                                        type="file"
+                                        name="image"
+                                        accept="image/*"
+                                        className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
+                                        onChange={handleChange}
+                                    />
+                                </div>
+
+                                {/* Botón submit */}
                                 <button
                                     type="submit"
-                                    className="rounded px-4 py-2 font-semibold border border-green-700 text-white bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 transition"
+                                    className="w-full rounded-lg px-4 py-3 font-semibold text-white bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 transition"
                                 >
-                                    Agregar
+                                    Agregar Producto
                                 </button>
                             </form>
                         </div>
                     </div>
                 )}
+
 
             </section>
 
@@ -273,64 +315,64 @@ export default function ProductsPage() {
             <main className="flex-1 max-w-7xl mx-auto px-4 py-12">
                 {selectedProduct && (
                     <Modal open={!!selectedProduct} setOpen={closeProductModal}>
-                        <div className="relative bg-white p-6 rounded-2xl shadow-xl max-w-md w-full mx-auto">
+                        <div className="relative w-full max-w-md mx-auto p-3">
 
                             {/* Botón de opciones */}
                             <div className="absolute top-4 right-4">
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
-                                    className="text-gray-600 hover:text-gray-900"
+                                    className="p-2 rounded-full hover:bg-gray-100 transition"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12h.01M12 12h.01M18 12h.01" />
                                     </svg>
                                 </button>
+
                                 {showMenu && (
-                                    <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-md z-10">
+                                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-fadeIn">
                                         <button
                                             onClick={() => {
                                                 if (!selectedProduct) return;
-
                                                 setEditFormData({
-                                                    product_name: selectedProduct.product_name,
+                                                    name: selectedProduct.name,
                                                     description: selectedProduct.description,
                                                     price: selectedProduct.price,
                                                     category: selectedProduct.category,
                                                 });
-
                                                 setEditOpen(true);
                                                 setShowMenu(false);
                                             }}
-                                            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 transition"
                                         >
-                                            Editar
+                                            ✏️ Editar
                                         </button>
                                         <button
                                             onClick={handleDelete}
-                                            className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
+                                            className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition"
                                         >
-                                            Eliminar
+                                            🗑 Eliminar
                                         </button>
                                     </div>
                                 )}
                             </div>
 
+
                             {/* Imagen */}
                             <img
                                 src={`${process.env.NEXT_PUBLIC_BACKEND_URL}api/products/uploads/products/${selectedProduct.id}`}
-                                alt={selectedProduct.product_name}
+                                alt={selectedProduct.name}
                                 className="w-full h-56 object-cover rounded-lg mb-4"
                             />
 
                             {/* Detalles */}
-                            <h3 className="text-2xl font-bold text-gray-800 mb-2">{selectedProduct.product_name}</h3>
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">{selectedProduct.name}</h3>
                             <p className="text-gray-600 mb-2">{selectedProduct.description}</p>
                             <p className="text-green-700 text-xl font-semibold mb-4">${selectedProduct.price}</p>
 
                             {/* Botón Agregar al carrito */}
                             <button
                                 onClick={() => {
-                                    handleAddToCart();
+                                    handleAddToCart(selectedProduct);
                                 }}
                                 className="w-full py-2 rounded-lg text-white font-medium bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 transition"
                             >
@@ -354,7 +396,7 @@ export default function ProductsPage() {
                                                 name="product_name"
                                                 placeholder="Nombre del producto"
                                                 className="w-full border border-gray-300 rounded px-4 py-2"
-                                                value={editFormData.product_name}
+                                                value={editFormData.name}
                                                 onChange={handleEditChange}
                                             />
                                             <input
@@ -402,12 +444,21 @@ export default function ProductsPage() {
                     </Modal>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                    {products.map((product) => (
-                        <div key={product.id}>
-                            <ProductComponent product={product} openProductModal={openProductModal}></ProductComponent>
-                        </div>
-
-                    ))}
+                    {products && products.length > 0 ? (
+                        products.map((product) => (
+                            <div key={product.id}>
+                                <ProductComponent
+                                    product={product}
+                                    openProductModal={openProductModal}
+                                    handleAddToCart={handleAddToCart}
+                                />
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 col-span-full text-center">
+                            No hay productos en esta categoría.
+                        </p>
+                    )}
                 </div>
             </main>
 

@@ -5,15 +5,18 @@ function Modal({ children, open, setOpen }: { children: ReactNode, open: boolean
     const modalRef = useRef(null);
     useOutsideAlerter(modalRef, setOpen);
 
+    if (!open) return null;
+
     return (
-        <>
-            <div className={`flex flex-col inset-0 z-50 items-center w-full ${open ? "block" : " hidden"}`}>
-                <div className="border border-gray-400 flex flex-col w-full rounded-xl shadow-lg bg-white p-4 items-start" ref={modalRef}>
-                    {children}
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div
+                ref={modalRef}
+                className="relative bg-white p-6 rounded-2xl shadow-lg w-full max-w-md"
+            >
+                {children}
             </div>
-        </>
-    )
+        </div>
+    );
 }
 
 export default Modal;
