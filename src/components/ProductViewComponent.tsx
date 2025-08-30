@@ -1,6 +1,6 @@
 import { ProductResponseDTO } from "@/types/product";
 
-function ProductComponent({ product, openProductModal, handleAddToCart }: { product: ProductResponseDTO, openProductModal: any, handleAddToCart: any }) {
+function ProductComponent({ product, openProductModal, handleAddToCart }: { product: ProductResponseDTO, openProductModal?: any, handleAddToCart: any }) {
 
     return (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden transition-all hover:shadow-lg flex flex-col">

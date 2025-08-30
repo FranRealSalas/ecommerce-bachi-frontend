@@ -26,7 +26,7 @@ const ProductService = {
                 });
         });
     },
-    async createProduct(name: string, description: string, price: number, category: string): Promise<ProductResponseDTO[]> {
+    async createProduct(name: string, description: string, price: number, category: string): Promise<ProductResponseDTO> {
         return new Promise((resolve, reject) => {
             axiosInstance.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/products`, { name, description, price, category })
                 .then(response => {
@@ -42,7 +42,11 @@ const ProductService = {
         formData.append("file", file);
 
         return new Promise((resolve, reject) => {
-            axiosInstance.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/products/upload-product-image`, formData)
+            axiosInstance.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/products/upload-product-image/${id}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            })
                 .then((response) => resolve(response.data))
                 .catch((error: AxiosError) => {
                     if (error.isAxiosError) reject(error)

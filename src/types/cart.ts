@@ -11,6 +11,7 @@ export interface CartResponseDTO {
     id: number;
     username: string;
     totalPrice: number;
+    totalItems: number;
     items: CartItemDTO[];
 }
 
